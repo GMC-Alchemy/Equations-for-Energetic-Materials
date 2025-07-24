@@ -16,6 +16,9 @@ Developed as a personal project to support research, teaching, and experimentati
 
 ## Usage
 Run the script with: python EnergMatEquations.py
+
 Choose an equation and the variable you want to calculate.
-Click **Calculate** to see the balanced result.
+
+Click **Calculate** to see the results.
+
 ---
