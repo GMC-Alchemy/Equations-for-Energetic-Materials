@@ -23,7 +23,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from PIL import Image, ImageTk
 
-# Define olive green and gold colors used consistently across the GUI.
+# Define colors used consistently across the GUI.
 BG_COLOR = '#4B5320'     # army/olive green.
 FG_COLOR = '#FFD700'     # gold.
 
@@ -168,7 +168,7 @@ var_display = {'νσtot2': 'νσₜₒₜ²',
     'Pn': 'P⁻',
     'nH': 'nH',
     'nN': 'nN',
-    'nO': 'nO',}
+    'nO': 'nO'}
 
 # Reverse mapping to go back from pretty name to variable name.
 pretty_to_var = {v: k for k, v in var_display.items()}
@@ -193,7 +193,10 @@ def render_equation(latex_str):
     if not os.path.exists('temp'):
         os.makedirs('temp')
     filepath = os.path.join('temp', 'equation.png')
-    plt.savefig(filepath, dpi=300, transparent=True, bbox_inches='tight')
+    plt.savefig(filepath,
+        dpi=300,
+        transparent=True,
+        bbox_inches='tight')
     plt.close()
     
     return filepath
@@ -231,6 +234,7 @@ def on_equation_selected(event=None):
 
 # Callback when a target variable is selected.
 def on_variable_selected(event=None):
+    
     eq_name = eq_choice.get()
     
     selected_pretty = var_choice.get()
@@ -279,6 +283,7 @@ def on_variable_selected(event=None):
 
 # Perform calculation based on user inputs.
 def calculate():
+    
     eq_name = eq_choice.get()
     
     selected_pretty = var_choice.get()
@@ -325,7 +330,7 @@ root.title("GMC - Energetic Materials Calculator")
 root.geometry("1500x600")
 root.configure(bg=BG_COLOR)
 
-# App title.
+# Software title.
 title = tk.Label(root,
     text="Energetic Materials Calculator",
     font=title_font,
