@@ -15,10 +15,9 @@ Developed as a personal project to support research, teaching, and experimentati
 - Support for multiple empirical models including Kamlet-Jacobs, Pepekin-Lebedev, and Smirnov-Smirnov equations.
 
 ## Usage
-Run the script with: python EnergMatEquations.py
-
-Choose an equation and the variable you want to calculate.
-
-Click **Calculate** to see the results.
+- Download both the .py and .json files.
+- Run the script with: python EnergMatEquations.py
+- Choose an equation and the variable you want to calculate.
+- Click **Calculate** to see the results.
 
 ---
