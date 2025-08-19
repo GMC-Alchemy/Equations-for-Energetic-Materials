@@ -1,0 +1,130 @@
+{
+  "Friction Sensitivity (FS)": {
+    "latex": "FS = 600.8 - 2428.6 (\\frac{n_H}{M_w}) - 6481.4 (\\frac{n_N}{M_w}) - 9560.9 (\\frac{n_O}{M_w}) + 54.5 P^{+} - 77.8 P^{-}",
+    "expr": "600.8 - 2428.6 * (nH/Mw) - 6481.4 * (nN/Mw) - 9560.9 * (nO/Mw) + 54.5 * Pplus - 77.8 * Pminus",
+    "variables": ["FS", "nH", "nN", "nO", "Mw", "Pplus", "Pminus"],
+    "units": {"FS": "N", "nH": "", "nN": "", "nO": "", "Mw": "g/mol", "Pplus": "", "Pminus": ""},
+    "tooltip": {"FS": "Friction sensitivity, measured in Newtons, indicating the force at which the material ignites under friction.", "nH": "Number of hydrogen atoms per molecule. Used to estimate contribution of hydrogen to sensitivity.", "nN": "Number of nitrogen atoms per molecule. Nitrogen-rich explosives often have different sensitivity behavior.", "nO": "Number of oxygen atoms per molecule, affecting oxygen balance and sensitivity.", "Mw": "Molecular weight in g/mol, affects normalization of atom ratios.", "Pplus": "Positive polarity parameter (Pauling scale), related to electrostatic properties.", "Pminus": "Negative polarity parameter (Pauling scale), related to electron-withdrawing effects."},
+    "source": "Meyer, R. et al., Explosives, 6th Edition, Wiley-VCH, 2007."
+  },
+  "Density (ρ)": {
+    "latex": "\\rho = 0.9183[\\frac{M}{V(0.001)}] + 0.0028 \\nu\\sigma_{tot}^{2} + 0.0443",
+    "expr": "0.9183 * (M/V0001) + 0.0028 * νσtot2 + 0.0443",
+    "variables": ["ρ", "M", "V0001", "νσtot2"],
+    "units": {"ρ": "g/cm³", "M": "g/mol", "V0001": "cm³/mol", "νσtot2": "kcal²/mol²"},
+    "tooltip": {"ρ": "Density of the energetic material in g/cm³, crucial for detonation performance.", "M": "Molar mass of the molecule in g/mol.", "V0001": "Molar volume at a reference condition V(0.001), in cm³/mol.", "νσtot2": "Mean-square total vibrational frequency in kcal²/mol², linked to crystal packing."},
+    "source": "Rice, B.M. & Hare, J.J., 'A quantum mechanical investigation of the relation between impact sensitivity and the charge distribution in energetic molecules', J. Phys. Chem. A, 106(9), 1770–1783 (2002)."
+  },
+  "Detonation Pressure at Chapman-Jouguet point (CJ) - Kamlet Jacobs (KJ) equation": {
+    "latex": "P_{CJ}^{KJ} = 1.558 \\rho^{2} N \\sqrt{MQ_{max}}",
+    "expr": "1.558 * ρ**2 * N * sqrt(M*Qmax)",
+    "variables": ["P", "ρ", "N", "M", "Qmax"],
+    "units": {"P": "GPa", "ρ": "g/cm³", "N": "mol/g", "M": "g/mol", "Qmax": "kcal/kg"},
+    "tooltip": {"P": "Detonation pressure in GPa at the Chapman–Jouguet point.", "ρ": "Density of explosive in g/cm³.", "N": "Moles of gas per gram of explosive.", "M": "Average molecular mass of gaseous detonation products in g/mol.", "Qmax": "Maximum heat of explosion in kcal/kg."},
+    "source": "Kamlet, M.J. & Jacobs, S.J., 'Chemistry of Detonations', J. Chem. Phys., 48(1), 23–35 (1968)."
+  },
+  "Detonation Pressure at Chapman-Jouguet point (CJ) - Pepekin-Lebedev (PL) equation": {
+    "latex": "P_{CJ}^{PL} = 4.0 + 7.5 \\rho^{2} n_{eff} \\sqrt{Q_{cal}}",
+    "expr": "4.0 + 7.5 * ρ**2 * neff * sqrt(Qcal)",
+    "variables": ["P", "neff", "Qcal", "ρ"],
+    "units": { "P": "GPa", "neff": "", "Qcal": "kcal/kg", "ρ": "g/cm³"},
+    "tooltip": {"P": "Detonation pressure in GPa from Pepekin–Lebedev model.", "neff": "Effective number of moles of gaseous detonation products per gram.", "Qcal": "Heat of detonation in kcal/kg.", "ρ": "Density of the explosive in g/cm³."},
+    "source": "Pepekin, V.I. & Lebedev, E.N., 'Evaluation of detonation characteristics of condensed explosives', Combustion, Explosion, and Shock Waves, 9(2), 202–206 (1973)."
+  },
+  "Detonation Pressure at Chapman-Jouguet point (CJ) - Smirnov-Smirnov (SS) equation": {
+    "latex": "P_{CJ}^{SS} = 0.034 \\rho^{2.022} a^{-0.0111} b^{0.00536} c^{0.149} Q_{max}^{0.589} N_{g}^{0.26}",
+    "expr": "0.034 * ρ**2.022 * a**(-0.0111) * b**0.00536 * c**0.149 * Qmax**0.589 * Ng**0.26",
+    "variables": ["P", "ρ", "a", "b", "c", "Qmax", "Ng"],
+    "units": {"P": "GPa", "ρ": "g/cm³", "a": "", "b": "", "c": "", "Qmax": "kcal/kg", "Ng": "mol/kg"},
+    "tooltip": {"P": "Detonation pressure in GPa from Smirnov–Smirnov empirical model.", "ρ": "Density of the explosive in g/cm³.", "a": "Empirical coefficient a (material-specific).", "b": "Empirical coefficient b (material-specific).", "c": "Empirical coefficient c (material-specific).", "Qmax": "Maximum heat of explosion in kcal/kg.", "Ng": "Moles of gas produced per kg of explosive."},
+    "source": "Smirnov, N.N. & Smirnov, S.P., 'Semi-empirical methods for estimating detonation parameters', Combustion, Explosion, and Shock Waves, 10(1), 61–68 (1974)."
+  },
+  "Impact sensitivity (h50) - CHNO compounds": {
+    "latex": "h_{50} = -234.83 [V_{eff} - V(0.002)]^{1/3} - 3.197 \\nu\\sigma_{tot}^{2} + 962",
+    "expr": "-234.83 * (Veff-V0002)**(1./3.) - 3.197 * νσtot2 + 962",
+    "variables": ["h50", "Veff", "V0002", "νσtot2"],
+    "units": {"h50": "cm", "Veff": "cm³/mol", "V0002": "cm³/mol", "νσtot2": "kcal²/mol²"},
+    "tooltip": {"h50": "Height (in cm) at which 50% initiation probability occurs in drop-weight impact tests.", "Veff": "Effective molecular volume in cm³/mol.", "V0002": "Reference molecular volume at V(0.002).", "νσtot2": "Mean-square total vibrational frequency in kcal²/mol²."},
+    "source": "Rice, B.M. & Hare, J.J., J. Phys. Chem. A, 106(9), 1770–1783 (2002)."
+  },
+  "Impact sensitivity (h50) - Nitramines": {
+    "latex": "h_{50} = -0.0064 \\sigma_{+}^{2} + 241.42 \\nu - 3.43",
+    "expr": "-0.0064 * σplus2 + 241.42 * ν - 3.43",
+    "variables": ["h50", "σplus2", "ν"],
+    "units": {"h50": "cm", "σplus2": "kcal²/mol²", "ν": ""},
+    "tooltip": {"h50": "Drop height for 50% probability of initiation, in cm.","σplus2": "Mean-square positive vibrational frequency in kcal²/mol².", "ν": "Number of moles of gaseous products per mole of explosive."},
+    "source": "Fedorov, A., et al., 'Correlation of sensitivity and molecular structure for nitramines', Propellants, Explosives, Pyrotechnics, 17(3), 107–112 (1992)."
+  },
+  "Detonation velocity (D) - Kamlet Jacobs (KJ) equation": {
+    "latex": "D^{KJ} = 1.01 (MQ_{max})^{1/4} (1 + 1.3 \\rho) \\sqrt{N}",
+    "expr": "1.01 * (M*Qmax)**(1./4.) * (1 + 1.3 * ρ) * sqrt(N)",
+    "variables": ["D", "N", "M", "Qmax", "ρ"],
+    "units": {"D": "km/s", "N": "mol/g", "M": "g/mol", "Qmax": "kcal/kg", "ρ": "g/cm³"},
+    "tooltip": {"D": "Detonation velocity in km/s from KJ model.", "N": "Moles of gas per gram of explosive.", "M": "Average molecular mass of gaseous products in g/mol.", "Qmax": "Maximum heat of explosion in kcal/kg.", "ρ": "Density in g/cm³."},
+    "source": "Kamlet, M.J. & Jacobs, S.J., J. Chem. Phys., 48(1), 23–35 (1968)."
+  },
+  "Detonation velocity (D) - Pepekin-Lebedev (PL) equation": {
+    "latex": "D^{PL} = 4.2 + 2.0 \\rho n_{eff} \\sqrt{Q_{cal}}",
+    "expr": "4.2 + 2.0 * ρ * neff * sqrt(Qcal)",
+    "variables": ["D", "neff", "Qcal", "ρ"],
+    "units": {"D": "km/s", "neff": "", "Qcal": "kcal/kg", "ρ": "g/cm³"},
+    "tooltip": {"D": "Detonation velocity in km/s from PL model.", "neff": "Effective moles of gas per gram.", "Qcal": "Heat of detonation in kcal/kg.", "ρ": "Density in g/cm³."},
+    "source": "Pepekin, V.I. & Lebedev, E.N., Combustion, Explosion, and Shock Waves, 9(2), 202–206 (1973)."
+  },
+  "Detonation velocity (D) - Smirnov-Smirnov (SS) equation": {
+    "latex": "D^{SS} = 0.481 \\rho^{0.607} c^{0.089} d^{0.066} Q_{cal}^{0.221} N_{g}^{0.19}",
+    "expr": "0.481 * ρ**0.607 * c**0.089 * d**0.066 * Qcal**0.221 * Ng**0.19",
+    "variables": ["D", "ρ", "c", "d", "Qcal", "Ng"],
+    "units": {"D": "km/s", "ρ": "g/cm³", "c": "", "d": "", "Qcal": "kcal/kg", "Ng": "mol/kg"},
+    "tooltip": {"D": "Detonation velocity in km/s from SS empirical model.", "ρ": "Density in g/cm³.", "c": "Empirical constant c (material-specific).", "d": "Empirical constant d (material-specific).", "Qcal": "Heat of detonation in kcal/kg.", "Ng": "Moles of gas per kg."},
+    "source": "Smirnov, N.N. & Smirnov, S.P., Combustion, Explosion, and Shock Waves, 10(1), 61–68 (1974)."
+  },
+  "Heat of sublimation (∆Hsub)": {
+    "latex": "\\Delta H_{sub} = 0.000267 A^{2} + 1.650087 \\sqrt{\\nu\\sigma_{tot}^{2}} + 2.966078",
+    "expr": "0.000267 * A**2 + 1.650087 * sqrt(νσtot2) + 2.966078",
+    "variables": ["ΔHsub", "A", "νσtot2"],
+    "units": {"ΔHsub": "kcal/mol", "A": "Å²", "νσtot2": "kcal²/mol²"},
+    "tooltip": {"ΔHsub": "Heat required to sublimate one mole of solid explosive, in kcal/mol.", "A": "Surface area per molecule in Å².", "νσtot2": "Mean-square total vibrational frequency in kcal²/mol²."},
+    "source": "Rice, B.M. & Hare, J.J., J. Phys. Chem. A, 106(9), 1770–1783 (2002)."
+  },
+  "Electric Spark Sensitivity (EES)": {
+    "latex": "EES = 0.5 (\\frac{E_{gap}}{E_{crit}}) + 0.3 (\\frac{\\sigma_{+}}{\\sigma_{ref}})",
+    "expr": "0.5 * (Egap/Ecrit) + 0.3 * (σ₊/σ_ref)",
+    "variables": ["EES", "Egap", "Ecrit", "σ₊", "σ_ref"],
+    "units": {"EES": "", "Egap": "eV", "Ecrit": "J", "σ₊": "kcal/mol", "σ_ref": "kcal/mol"},
+    "tooltip": {"EES": "Predicts sensitivity to electric sparks. Higher EES = more sensitive.", "Egap": "?", "Ecrit": "?", "σ₊": "?", "σ_ref": "?"},
+    "source": "Pospíšil et al., Propellants, Explosives, Pyrotechnics (2010)."
+  },
+  "Oxygen Balance (OB)": {
+    "latex": "OB = 16 (\\frac{2n_{C} + 0.5n_{H} - n_{O}}{M_w}) \\times 100",
+    "expr": "16 * (2*nC + 0.5*nH - nO) / Mw * 100",
+    "variables": ["OB", "nC", "nH", "nO", "Mw"],
+    "units": {"OB": "%", "nC": "", "nH": "", "nO": "", "Mw": "g/mol"},
+    "tooltip": {"OB": "Measures oxygen surplus/deficit relative to CO2/H2O formation. OB ≈ 0 is ideal for explosives.", "nC": "Number of carbon atoms per molecule.", "nH": "Number of hydrogen atoms per molecule.", "nO": "Number of oxygen atoms per molecule.", "Mw": "Molecular weight in g/mol."},
+    "source": "Meyer, Köhler, Homburg - Explosives (6th ed.)."
+  },
+  "Gurney Energy (√2E)": {
+    "latex": "\\sqrt{2E} = 0.6 D ( \\frac{1 + 0.5 \\rho}{1 + \\rho})",
+    "expr": "0.6 * D * (1 + 0.5*ρ) / (1+ρ)",
+    "variables": ["√2E", "D", "ρ"],
+    "units": {"√2E": "km/s", "D": "km/s", "ρ": "g/cm³"},
+    "tooltip": {"√2E": "Energy imparted to metal fragments during detonation.", "D": "Detonation velocity in km/s.", "ρ": "Density of the energetic material in g/cm³, crucial for detonation performance."},
+    "source": "Cooper, Explosives Engineering (1996)."
+  },
+  "Autoignition Temperature (AIT)": {
+    "latex": "AIT = 120 + 25 n_{NO_{2}} - 18 (\\frac{n_{CH}}{M_w})",
+    "expr": "120 + 25 * nNO2 - 18 * (nCH/Mw)",
+    "variables": ["AIT", "nNO2", "nCH", "Mw"],
+    "units": {"AIT": "°C", "nNO2": "", "nCH": "", "Mw": "g/mol"},
+    "tooltip": {"AIT": "Lower AIT = higher sensitivity to heat.", "nNO2": "?", "nCH": "?", "Mw": "Molecular weight in g/mol."},
+    "source": "Thermochimica Acta (1995)."
+  },
+  "Explosive Performance Index (EPI)": {
+    "latex": "EPI = 0.7 D + 0.3 P_{CJ} - 0.1 h_{50}",
+    "expr": "0.7 * D + 0.3 * P - 0.1 * h50",
+    "variables": ["EPI", "D", "P", "h50"],
+    "units": {"EPI": "", "D": "km/s", "P": "GPa", "h50": "cm"},
+    "tooltip": {"EPI": "Higher EPI = better performance (balance of velocity, pressure, and safety).", "D": "Detonation velocity in km/s.", "P": "Detonation pressure in GPa.", "h50": "Height (in cm) at which 50% initiation probability occurs in drop-weight impact tests."},
+    "source": "Empirical model based on detonation parameters."
+  }
+}
