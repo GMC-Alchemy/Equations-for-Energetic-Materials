@@ -1,402 +1,316 @@
 """
-Energy Materials Calculator
+    ENERGY MATERIALS CALCULATOR
 
-by Gabriel Monteiro de Castro.
+by Gabriel Monteiro de Castro, Ph.D.
 
 Description:
 This script provides a graphical calculator for estimating key properties of energetic materials, such as detonation velocity, detonation pressure, impact sensitivity, density, and heat of sublimation. It uses empirical equations sourced from scientific literature and allows users to solve for any variable given the others.
 
 Purpose:
 Developed as a personal project to support research, teaching, and experimentation in the field of energetic materials chemistry and physics.
-
-Features:
-- Interactive GUI built with Tkinter.
-- Dynamic rendering of chemical equations using LaTeX and Matplotlib.
-- Symbolic computation and equation solving via SymPy.
-- Support for multiple empirical models including Kamlet-Jacobs, Pepekin-Lebedev, and Smirnov-Smirnov equations.
 """
 
 import os
+import json
 import sympy as sp
 import matplotlib.pyplot as plt
 import tkinter as tk
 from tkinter import ttk, messagebox
 from PIL import Image, ImageTk
 
-# Define colors used consistently across the GUI.
-BG_COLOR = '#4B5320'     # army/olive green.
-FG_COLOR = '#FFD700'     # gold.
+# TOOLTIP CLASS.
+class ToolTip:
+    # Tooltip initialization.
+    def __init__(self, widget, text):
+        self.widget = widget
+        self.text = text
+        self.tipwindow = None
+        widget.bind("<Enter>", self.show_tip)
+        widget.bind("<Leave>", self.hide_tip)
 
-# Define fonts for various UI elements.
-title_font = ("Courier New", 18, "bold")
-entry_font = ("Courier New", 14)
-button_font = ("Courier New", 14, "bold")
-output_font = ("Courier New", 18, "bold")
+    # Show tooltip.
+    def show_tip(self, _):
+        if self.tipwindow or not self.text:
+            return
+        x, y, _, cy = self.widget.bbox("insert")
+        x += self.widget.winfo_rootx() + 25
+        y += self.widget.winfo_rooty() + cy + 25
+        self.tipwindow = tw = tk.Toplevel(self.widget)
+        tw.wm_overrideredirect(True)
+        tw.geometry(f"+{x}+{y}")
+        label = tk.Label(tw,
+            text=self.text,
+            justify=tk.LEFT,
+            background="#ffffe0",
+            relief=tk.SOLID,
+            borderwidth=1,
+            font=("tahoma", 10, "normal"))
+        label.pack(ipadx=5, ipady=5)
 
-# Define equations and associated metadata.
-equations = {
-    "Friction Sensitivity (FS)": {
-        "latex": r"FS = 600.8 - 2428.6 \frac{n_H}{M_w} - 6481.4 \frac{n_N}{M_w} - 9560.9 \frac{n_O}{M_w} + 54.5 P^{+} - 77.8 P^{-}",
-        "expr": "600.8 - 2428.6 * (nH/Mw) - 6481.4 * (nN/Mw) - 9560.9 * (nO/Mw) + 54.5 * Pp - 77.8 * Pn",
-        "variables": ['FS', 'nH', 'nN', 'nO', 'Mw', 'Pp', 'Pn'],
-        "units": {'FS': 'N',
-            'nH': '',
-            'nN': '',
-            'nO': '',
-            'Mw': 'g/mol',
-            'Pp': '',
-            'Pn': ''}
-    },
-    "Density (ρ)": {
-        "latex": r"\rho = 0.9183[\frac{M}{V(0.001)}] + 0.0028 \nu\sigma_{tot}^{2} + 0.0443",
-        "expr": "0.9183 * M / V001 + 0.0028 * νσtot2 + 0.0443",
-        "variables": ['ρ', 'M', 'V001', 'νσtot2'],
-        "units": {'ρ': 'g/cm³',
-            'M': 'g/mol',
-            'V001': 'cm³/mol',
-            'νσtot2': 'kcal²/mol²'}
-    },
-    "Detonation Pressure at Chapman-Jouguet point (PCJ) - Kamlet Jacobs (KJ) equation": {
-        "latex": r"P_{CJ}^{KJ} = 1.558 \rho^{2} N \sqrt{M} \sqrt{Q_{max}}",
-        "expr": "1.558 * ρ**2 * N * sqrt(M) * sqrt(Qmax)",
-        "variables": ['P', 'ρ', 'N', 'M', 'Qmax'],
-        "units": {'P': 'GPa',
-            'ρ': 'g/cm³',
-            'N': 'mol/g',
-            'M': 'g/mol',
-            'Qmax': 'kcal/kg'}
-    },
-    "Detonation Pressure at Chapman-Jouguet point (PCJ) - Pepekin-Lebedev (PL) equation": {
-        "latex": r"P_{CJ}^{PL} = 4.0 + 7.5 n_{eff} Q_{cal}^{0.5} ρ^{2}",
-        "expr": "4.0 + 7.5 * neff * sqrt(Qcal) * ρ**2",
-        "variables": ['P', 'neff', 'Qcal', 'ρ'],
-        "units": {'P': 'GPa',
-            'neff': '',
-            'Qcal': 'kcal/kg',
-            'ρ': 'g/cm³'}
-    },
-    "Detonation Pressure at Chapman-Jouguet point (PCJ) - Smirnov-Smirnov (SS) equation": {
-        "latex": r"P_{CJ}^{SS} = 0.034 ρ^{2.022} a^{-0.0111} b^{0.00536} c^{0.149} Q_{max}^{0.589} N_{g}^{0.26}",
-        "expr": "0.034 * ρ**2.022 * a**(-0.0111) * b**0.00536 * c**0.149 * Qmax**0.589 * Ng**0.26",
-        "variables": ['P', 'ρ', 'a', 'b', 'c', 'Qmax', 'Ng'],
-        "units": {'P': 'GPa',
-            'ρ': 'g/cm³',
-            'a': '',
-            'b': '',
-            'c': '',
-            'Qmax': 'kcal/kg',
-            'Ng': 'mol/kg'}
-    },
-    "Impact sensitivity (h50) - CHNO compounds": {
-        "latex": r"h_{50} = -234.83 [V_{eff} - V(0.002)]^{\frac{1}{3}} - 3.197 \nu\sigma_{tot}^{2} + 962",
-        "expr": "-234.83 * (Veff-V002)**(1./3.) - 3.197 * νσtot2 + 962",
-        "variables": ['h50', 'Veff', 'V002', 'νσtot2'],
-        "units": {'h50': 'cm',
-            'Veff': 'cm³/mol',
-            'V002': 'cm³/mol',
-            'νσtot2': 'kcal²/mol²'}
-    },
-    "Impact sensitivity (h50) - Nitramines": {
-        "latex": r"h_{50} = -0.0064 \sigma_{+}^{2} + 241.42 \nu - 3.43",
-        "expr": "-0.0064 * σ_p2 + 241.42 * ν - 3.43",
-        "variables": ['h50', 'σ_p2', 'ν'],
-        "units": {'h50': 'cm',
-            'σ_p2': 'kcal²/mol²',
-            'ν': ''}
-    },
-    "Detonation velocity (D) - Kamlet Jacobs (KJ) equation": {
-        "latex": r"D^{KJ} = 1.01 N^{0.5} M^{0.25} Q_{max}^{0.25} (1 + 1.3 \rho)",
-        "expr": "1.01 * sqrt(N) * M**0.25 * Qmax**0.25 * (1+1.3*ρ)",
-        "variables": ['D', 'N', 'M', 'Qmax', 'ρ'],
-        "units": {'D': 'km/s',
-            'N': 'mol/g',
-            'M': 'g/mol',
-            'Qmax': 'kcal/kg',
-            'ρ': 'g/cm³'}
-    },
-    "Detonation velocity (D) - Pepekin-Lebedev (PL) equation": {
-        "latex": r"D^{PL} = 4.2 + 2.0 n_{eff} Q_{cal}^{0.5} \rho",
-        "expr": "4.2 + 2.0 * neff * sqrt(Qcal) * ρ",
-        "variables": ['D', 'neff', 'Qcal', 'ρ'],
-        "units": {'D': 'km/s',
-            'neff': '',
-            'Qcal': 'kcal/kg',
-            'ρ': 'g/cm³'}
-    },
-    "Detonation velocity (D) - Smirnov-Smirnov (SS) equation": {
-        "latex": r"D^{SS} = 0.481 \rho^{0.607} c^{0.089} d^{0.066} Q_{cal}^{0.221} N_{g}^{0.19}",
-        "expr": "0.481 * ρ**0.607 * c**0.089 * d**0.066 * Qcal**0.221 * Ng**0.19",
-        "variables": ['D', 'ρ', 'c', 'd', 'Qcal', 'Ng'],
-        "units": {'D': 'km/s',
-            'ρ': 'g/cm³',
-            'c': '',
-            'd': '',
-            'Qcal': 'kcal/kg',
-            'Ng': 'mol/kg'}
-    },
-    "Heat of sublimation (∆Hsub)": {
-        "latex": r"\Delta H_{sub} = 0.000267 A^{2} + 1.650087 \sqrt{\nu\sigma_{tot}^{2}} + 2.966078",
-        "expr": "0.000267 * A**2 + 1.650087 * sqrt(νσtot2) + 2.966078",
-        "variables": ['ΔHsub', 'A', 'νσtot2'],
-        "units": {'ΔHsub': 'kcal/mol',
-            'A': 'Å²',
-            'νσtot2': 'kcal²/mol²'}
-    }
-}
+    def hide_tip(self, _):
+        if self.tipwindow:
+            self.tipwindow.destroy()
+        self.tipwindow = None
 
-# Map variable names to prettier Unicode display names for better GUI readability.
-var_display = {'νσtot2': 'νσₜₒₜ²',
-    'Veff': 'Veff',
-    'V001': 'V(0.001)',
-    'V002': 'V(0.002)',
-    'σ_p2': 'σ₊²',
-    'ρ': 'ρ',
-    'Qmax': 'Qmax',
-    'Qcal': 'Qcal',
-    'ΔHsub': 'ΔHsub',
-    'h50': 'h₅₀',
-    'neff': 'neff',
-    'Ng': 'Ng',
-    'M': 'M',
-    'N': 'N',
-    'A': 'A',
-    'c': 'c',
-    'd': 'd',
-    'P': 'P',
-    'D': 'D',
-    'Pp': 'P⁺',
-    'Pn': 'P⁻',
-    'nH': 'nH',
-    'nN': 'nN',
-    'nO': 'nO'}
+# MAIN CLASS.
+class EnergeticMaterialsCalculator:
+    # GUI initialization.
+    def __init__(self, master, equations):
+        self.master = master
+        self.equations = equations
+        self.bg_color = '#4B5320'
+        self.fg_color = '#FFD700'
+        self.title_font = ("Courier New", 18, "bold")
+        self.entry_font = ("Courier New", 14)
+        self.button_font = ("Courier New", 14, "bold")
+        self.output_font = ("Courier New", 18, "bold")
 
-# Reverse mapping to go back from pretty name to variable name.
-pretty_to_var = {v: k for k, v in var_display.items()}
+        self.eq_choice = None
+        self.var_choice = None
+        self.input_entries = {}
+        self.result_text = ""
 
-# Render equation as LaTeX image using matplotlib.
-def render_equation(latex_str):
-    
-    # Create figure sized to show equation clearly.
-    plt.figure(figsize=(10, 1.5))   # Wider figure. Adjust height to avoid squeeze.
-    plt.text(0.5,
-        0.5,
-        f"${latex_str}$",
-        fontsize=24,
-        ha='center',
-        va='center',
-        fontname='Courier New',     # Ensure this is installed.
-        color=FG_COLOR)
-    plt.axis('off')                 # Hide axes to display only the equation.
-    plt.tight_layout(pad=0.5)       # Reduce padding for compactness.
-    
-    # Create temp folder if it doesn't exist to store the image.
-    if not os.path.exists('temp'):
-        os.makedirs('temp')
-    filepath = os.path.join('temp', 'equation.png')
-    plt.savefig(filepath,
-        dpi=300,
-        transparent=True,
-        bbox_inches='tight')
-    plt.close()
-    
-    return filepath
+        self.master.title("GMC - Energetic Materials Calculator")
+        self.master.geometry("1500x900")
+        self.master.configure(bg=self.bg_color)
 
-# Callback when an equation is selected from the combobox.
-def on_equation_selected(event=None):
-    
-    # Get selected equation name.
-    eq_name = eq_choice.get()
-    eq_info = equations[eq_name]
-    latex_str = eq_info['latex']
-    vars_list = eq_info['variables']
-    
-    # Create list of prettier variable names for display.
-    pretty_vars_list = [var_display.get(v, v) for v in vars_list]
-    var_choice['values'] = pretty_vars_list
-    var_choice.set('')
+        self.build_gui()
+
+    def build_gui(self):
+        # Software title.
+        title = tk.Label(self.master,
+            text="Energetic Materials Calculator",
+            font=self.title_font,
+            bg=self.bg_color,
+            fg=self.fg_color)
+        title.pack(pady=10)
+
+        choice_frame = tk.Frame(self.master, bg=self.bg_color)
+        choice_frame.pack(pady=5)
+
+        # Equation selection label and combobox.
+        tk.Label(choice_frame,
+            text="Equation:",
+            bg=self.bg_color,
+            fg=self.fg_color,
+            font=self.entry_font).grid(row=0, column=0, padx=5)
+
+        self.eq_choice = ttk.Combobox(choice_frame, values=list(self.equations.keys()), font=self.entry_font, width=80)
+        self.eq_choice.grid(row=0, column=1, padx=5)
+        self.eq_choice.bind("<<ComboboxSelected>>", self.on_equation_selected)
+
+        # Variable selection label and combobox.
+        tk.Label(choice_frame,
+            text="Variable:",
+            bg=self.bg_color,
+            fg=self.fg_color,
+            font=self.entry_font).grid(row=0, column=2, padx=5)
+
+        self.var_choice = ttk.Combobox(choice_frame, font=self.entry_font, width=15)
+        self.var_choice.grid(row=0, column=3, padx=5)
+        self.var_choice.bind("<<ComboboxSelected>>", self.on_variable_selected)
+
+        # Frame for equations side-by-side.
+        eq_frame = tk.Frame(self.master, bg=self.bg_color)
+        eq_frame.pack(pady=10)
+
+        self.eq_label = tk.Label(eq_frame, bg=self.bg_color)
+        self.eq_label.pack(side=tk.LEFT, padx=20)
+
+        self.solved_label = tk.Label(eq_frame, bg=self.bg_color)
+        self.solved_label.pack(side=tk.LEFT, padx=20)
+
+        self.source_label = tk.Label(self.master,
+            text="",
+            font=("Courier New", 12, "italic"),
+            wraplength=1400,
+            bg=self.bg_color,
+            fg=self.fg_color,
+            justify="center")
+        self.source_label.pack(pady=5)
+
+        self.input_frame = tk.Frame(self.master, bg=self.bg_color)
+        self.input_frame.pack(pady=10)
+
+        # "Calculate" button.
+        self.calc_btn = tk.Button(self.master,
+            text="Calculate",
+            command=self.calculate,
+            bg=self.bg_color,
+            fg=self.fg_color,
+            font=self.button_font)
+        self.calc_btn.pack(pady=5)
+        self.master.bind("<Return>", lambda e: self.calculate())
+
+        # Label to show output/result.
+        self.output_label = tk.Label(self.master,
+            text="",
+            font=self.output_font,
+            bg=self.bg_color,
+            fg=self.fg_color)
+        self.output_label.pack(pady=10)
+
+        # "Copy Result to Clipboard" button.
+        self.copy_btn = tk.Button(self.master,
+            text="Copy Result to Clipboard",
+            command=self.copy_to_clipboard,
+            bg=self.bg_color,
+            fg=self.fg_color,
+            font=self.button_font)
+        self.copy_btn.pack(pady=5)
+
+    # Render equation as LaTeX image using matplotlib.pyplot (plt).
+    def render_equation(self, latex_str, filename):
+        plt.figure(figsize=(6, 1.5))
+        plt.text(0.5,
+            0.5,
+            f"${latex_str}$",
+            fontsize=20,
+            ha='center',
+            va='center',
+            fontname='Courier New',
+            color=self.fg_color)
+        plt.axis('off')
+        plt.tight_layout(pad=0.5)
+        
+        # Create temp folder if it doesn't exist to store the image.
+        if not os.path.exists('temp'):
+            os.makedirs('temp')
+        filepath = os.path.join('temp', filename)
+        plt.savefig(filepath, dpi=300, transparent=True, bbox_inches='tight')
+        plt.close()
+        return filepath
+
+    # Callback when an equation is selected from the combobox.
+    def on_equation_selected(self, event=None):
+        # Get selected equation name.
+        eq_name = self.eq_choice.get()
+        eq_info = self.equations[eq_name]
+        self.var_choice['values'] = eq_info['variables']
+        self.var_choice.set("")
+
+        img_path = self.render_equation(eq_info['latex'], 'equation.png')
+        img = self.load_image(img_path)
+        self.eq_label.config(image=img)
+        self.eq_label.image = img
+
+        self.solved_label.config(image="")  # Clear solved form until calculated.
+        self.source_label.config(text=f"Source: {eq_info.get('source', '')}")
+
+        for widget in self.input_frame.winfo_children():
+            widget.destroy()
+        self.output_label.config(text="")
 
     # Render and display the equation image.
-    img_path = render_equation(latex_str)
-    img = Image.open(img_path)
-    max_width = 600                             # Resize to fit GUI.
-    aspect_ratio = img.height / img.width
-    new_height = int(max_width * aspect_ratio)
-    img = img.resize((max_width, new_height), Image.LANCZOS)
-    img_tk = ImageTk.PhotoImage(img)
-    eq_label.config(image=img_tk)
-    eq_label.image = img_tk                     # Keep reference to avoid garbage collection.
-    
-    # Clear any previous input fields and output.
-    for widget in input_frame.winfo_children():
-        widget.destroy()
-        
-    output_label.config(text="")
+    def load_image(self, path):
+        img = Image.open(path)
+        max_width = 600 # Resize to fit GUI.
+        aspect_ratio = img.height / img.width
+        new_height = int(max_width * aspect_ratio)
+        img = img.resize((max_width, new_height), Image.LANCZOS)
+        return ImageTk.PhotoImage(img)
 
-# Callback when a target variable is selected.
-def on_variable_selected(event=None):
-    
-    eq_name = eq_choice.get()
-    
-    selected_pretty = var_choice.get()
-    target_var = pretty_to_var.get(selected_pretty, selected_pretty)
-    
-    eq_info = equations[eq_name]
-    vars_list = eq_info['variables']
-    units_dict = eq_info.get('units', {})
+    # Callback when a target variable is selected.
+    def on_variable_selected(self, event=None):
+        eq_name = self.eq_choice.get()
+        eq_info = self.equations[eq_name]
+        target_var = self.var_choice.get()
 
-    # Clear previous input fields.
-    for widget in input_frame.winfo_children():
-        widget.destroy()
+        # Clear previous input fields.
+        for widget in self.input_frame.winfo_children():
+            widget.destroy()
+        self.input_entries.clear()
 
-    global input_entries
-    input_entries = {}
+        # Create entry fields for all variables except the one we want to calculate.
+        for var in eq_info['variables']:
+            if var != target_var:
+                var_frame = tk.Frame(self.input_frame, bg=self.bg_color)
+                var_frame.pack(pady=2, fill='x')
 
-    # Create entry fields for all variables except the one we want to calculate.
-    for var in vars_list:
-        if var != target_var:
-            var_frame = tk.Frame(input_frame, bg=BG_COLOR)
-            var_frame.pack(pady=2, fill='x')
+                lbl = tk.Label(var_frame,
+                    text=f"{var}:",
+                    bg=self.bg_color,
+                    fg=self.fg_color,
+                    font=self.entry_font,
+                    anchor='e',
+                    width=10)
+                lbl.pack(side=tk.LEFT, padx=5)
+                if 'tooltip' in eq_info and var in eq_info['tooltip']:
+                    ToolTip(lbl, eq_info['tooltip'][var])
 
-            pretty_var = var_display.get(var, var)
-            lbl = tk.Label(var_frame,
-                text=f"{pretty_var}:",
-                bg=BG_COLOR,
-                fg=FG_COLOR,
-                font=entry_font,
-                anchor='e',
-                width=10)
-            lbl.pack(side=tk.LEFT, padx=5)
+                ent = tk.Entry(var_frame, font=self.entry_font, width=15)
+                ent.pack(side=tk.LEFT, padx=5)
 
-            ent = tk.Entry(var_frame,
-                font=entry_font,
-                width=15)
-            ent.pack(side=tk.LEFT, padx=5)
+                unit_lbl = tk.Label(var_frame,
+                    text=eq_info['units'].get(var, ''),
+                    bg=self.bg_color,
+                    fg=self.fg_color,
+                    font=self.entry_font)
+                unit_lbl.pack(side=tk.LEFT, padx=5)
 
-            unit_lbl = tk.Label(var_frame,
-                text=units_dict.get(var, ''),
-                bg=BG_COLOR,
-                fg=FG_COLOR,
-                font=entry_font)
-            unit_lbl.pack(side=tk.LEFT, padx=5)
+                self.input_entries[var] = ent
 
-            input_entries[var] = ent
+    # Perform calculation based on user inputs.
+    def calculate(self):
+        eq_name = self.eq_choice.get()
+        eq_info = self.equations[eq_name]
+        target_var = self.var_choice.get()
 
-# Perform calculation based on user inputs.
-def calculate():
-    
-    eq_name = eq_choice.get()
-    
-    selected_pretty = var_choice.get()
-    target_var = pretty_to_var.get(selected_pretty, selected_pretty)
-    
-    eq_str = equations[eq_name]['expr']
-    vars_list = equations[eq_name]['variables']
-    eq_info = equations[eq_name]
-    units_dict = eq_info.get('units', {})
-    unit = units_dict.get(target_var, '')
+        # Define symbols for sympy to parse.
+        symbols = {v: sp.Symbol(v) for v in eq_info['variables']}
+        expr = sp.sympify(eq_info['expr'], locals=symbols)
 
-    # Define symbols for sympy to parse.
-    symbols = {v: sp.Symbol(v) for v in vars_list}
-    expr = sp.sympify(eq_str, locals=symbols)
-    
-    # Solve for the target variable.
-    sol = sp.solve(sp.Eq(symbols[vars_list[0]], expr), symbols[target_var])
-    if not sol:
-        messagebox.showerror("Error", "Cannot solve for selected variable.")
-        return
-    solution = sol[0]
-    
-    # Collect user inputs and substitute into the solution.
-    subs = {}
-    for var, ent in input_entries.items():
-        val = ent.get()
-        try:
-            subs[var] = float(val)
-        except:
-            messagebox.showerror("Input Error", f"Invalid number for {var}")
+        # Solve for the target variable.
+        sol = sp.solve(sp.Eq(symbols[eq_info['variables'][0]], expr), symbols[target_var])
+        if not sol:
+            messagebox.showerror("Error", "Cannot solve for selected variable.")
             return
+        solution = sol[0]
+
+        # Collect user inputs and substitute into the solution.
+        subs = {}
+        for var, ent in self.input_entries.items():
+            val = ent.get()
+            try:
+                val = float(val)
+                unit = eq_info['units'].get(var, '')
+                subs[var] = val
+            except:
+                messagebox.showerror("Input Error", f"Invalid number for {var}")
+                return
+
+        # Evaluate the expression and display the result.
+        try:
+            result = solution.evalf(subs=subs)
+            unit = eq_info['units'].get(target_var, '')
+            display_val = result
             
-    # Evaluate the expression and display the result.
-    try:
-        result = solution.evalf(subs=subs)
-        pretty_target = var_display.get(target_var, target_var)
-        output_label.config(text=f"{pretty_target} = {result:.4f} {unit}")
-    except Exception as e:
-        messagebox.showerror("Error", str(e))
+            self.result_text = f"{target_var} = {display_val:.4f} {unit}"
+            self.output_label.config(text=self.result_text)
 
-# GUI initialization.
-root = tk.Tk()
-root.title("GMC - Energetic Materials Calculator")
-root.geometry("1500x600")
-root.configure(bg=BG_COLOR)
+            # Render solved form.
+            solved_latex = sp.latex(sp.Eq(symbols[target_var], solution))
+            img_path = self.render_equation(solved_latex, 'solved.png')
+            img = self.load_image(img_path)
+            self.solved_label.config(image=img)
+            self.solved_label.image = img
+        except Exception as e:
+            messagebox.showerror("Error", str(e))
 
-# Software title.
-title = tk.Label(root,
-    text="Energetic Materials Calculator",
-    font=title_font,
-    bg=BG_COLOR,
-    fg=FG_COLOR)
-title.pack(pady=10)
+    def copy_to_clipboard(self):
+        if self.result_text:
+            self.master.clipboard_clear()
+            self.master.clipboard_append(self.result_text)
+            self.master.update()
+        else:
+            messagebox.showinfo("Copy Result", "No result to copy yet.")
 
-# Frame containing dropdowns for equation and variable selection.
-choice_frame = tk.Frame(root, bg=BG_COLOR)
-choice_frame.pack(pady=5)
-
-# Equation selection label and combobox.
-eq_label_text = tk.Label(choice_frame,
-    text="Equation:",
-    bg=BG_COLOR,
-    fg=FG_COLOR,
-    font=entry_font)
-eq_label_text.grid(row=0, column=0, padx=5)
-
-# Dynamically size based on longest text.
-longest_eq = max(equations.keys(), key=len)
-eq_choice = ttk.Combobox(choice_frame,
-    values=list(equations.keys()),
-    font=entry_font,
-    width=len(longest_eq)+5)
-eq_choice.grid(row=0, column=1, padx=5)
-eq_choice.bind("<<ComboboxSelected>>", on_equation_selected)
-
-# Variable selection label and combobox.
-var_label_text = tk.Label(choice_frame,
-    text="Variable:",
-    bg=BG_COLOR,
-    fg=FG_COLOR,
-    font=entry_font)
-var_label_text.grid(row=0, column=2, padx=5)
-
-var_choice = ttk.Combobox(choice_frame,
-    font=entry_font,
-    width=15)
-var_choice.grid(row=0, column=3, padx=5)
-var_choice.bind("<<ComboboxSelected>>", on_variable_selected)
-
-# Label for displaying rendered equation image.
-eq_label = tk.Label(root, bg=BG_COLOR)
-eq_label.pack(pady=10)
-
-# Frame for dynamic input fields.
-input_frame = tk.Frame(root, bg=BG_COLOR)
-input_frame.pack(pady=10)
-
-# Calculate button.
-calc_btn = tk.Button(root,
-    text="Calculate",
-    command=calculate,
-    bg=BG_COLOR,
-    fg=FG_COLOR,
-    font=button_font)
-calc_btn.pack(pady=5)
-
-# Label to show output/result.
-output_label = tk.Label(root,
-    text="",
-    font=output_font,
-    bg=BG_COLOR,
-    fg=FG_COLOR)
-output_label.pack(pady=10)
-
-# Start the GUI event loop.
-root.mainloop()
+if __name__ == "__main__":
+    # Get equations from the JSON file.
+    with open("equations.json", "r", encoding="utf-8") as f:
+        EQUATIONS = json.load(f)
+    root = tk.Tk()
+    app = EnergeticMaterialsCalculator(root, EQUATIONS)
+    
+    # Start the GUI event loop.
+    root.mainloop()
