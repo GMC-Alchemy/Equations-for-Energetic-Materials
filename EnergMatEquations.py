@@ -1,15 +1,3 @@
-"""
-    ENERGY MATERIALS CALCULATOR
-
-by Gabriel Monteiro de Castro, Ph.D.
-
-Description:
-This script provides a graphical calculator for estimating key properties of energetic materials, such as detonation velocity, detonation pressure, impact sensitivity, density, and heat of sublimation. It uses empirical equations sourced from scientific literature and allows users to solve for any variable given the others.
-
-Purpose:
-Developed as a personal project to support research, teaching, and experimentation in the field of energetic materials chemistry and physics.
-"""
-
 import os
 import json
 import sympy as sp
@@ -314,3 +302,4 @@ if __name__ == "__main__":
     
     # Start the GUI event loop.
     root.mainloop()
+
